@@ -95,13 +95,25 @@ committed — see [Data](#data) below.
 
 ## Setup
 
+Requires Python ≥3.10 and Node.js ≥18. One-time setup, then a single
+command starts both the backend and the console:
+
+**macOS / Linux:**
 ```bash
-python3 -m pip install -e ".[dev]"
-cd gcs-console && npm install
+./scripts/setup_mac.sh
+./scripts/run_mac.sh        # API on :8000, console on :5173, Ctrl-C stops both
 ```
 
-Requires Python ≥3.10. The project is not currently PyPI-packaged beyond
-local editable install (`pyproject.toml` at the repo root).
+**Windows:**
+```bat
+scripts\setup_windows.bat
+scripts\run_windows.bat     REM opens API and console each in their own window
+```
+
+Both setup scripts create a `.venv`, install the backend (`pip install
+-e ".[dev]"`) and the console's npm dependencies. The project is not
+currently PyPI-packaged beyond that local editable install
+(`pyproject.toml` at the repo root).
 
 ## Running things
 
@@ -127,13 +139,8 @@ data):
 python3 scripts/safety_validation.py
 ```
 
-**API + GCS console**, using `.claude/launch.json`'s dev-server configs
-(or run the two commands directly):
-```bash
-bash scripts/run_api.sh          # FastAPI on :8000
-npm --prefix gcs-console run dev # Vite on :5173
-```
-Open the console, and press the **LIVE** button to send a real telemetry
+**API + GCS console**: `./scripts/run_mac.sh` / `scripts\run_windows.bat`
+(see [Setup](#setup) above) starts both. Open the console, and press the **LIVE** button to send a real telemetry
 frame through the actual backend (the scripted "1–6" scenario buttons are
 a separate, pre-authored demo mode that needs no backend). A live call
 genuinely takes tens of seconds — see [Known limitations](#known-limitations).
