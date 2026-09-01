@@ -1,0 +1,80 @@
+{
+  "description": "Thermal, oil, and dynamics calibration parameters (Phase B) - fitted against [FIT] flight data",
+  "provenance": {
+    "procedure": "Phase B: prediction-error least-squares (scipy trf) against REAL Rotax 915 iS Dynon CAN-bus data",
+    "source": "[FIT]",
+    "fit_source": "NTSB docket WPR22LA211 (RANS S21, N46JH, SN13785), DYNON FLIGHT DATA-USER LOG DATA-RAW CSV",
+    "fit_window_s": 400,
+    "fit_skip_s": 250,
+    "cost": 1653722.1110439794,
+    "optimizer_status": 3,
+    "caveat": "Single accident flight; not a healthy-segment-selected calibration set per spec Sec 3.1. This IS the correct engine type (915 iS), unlike the earlier NGAFID-derived fit."
+  },
+  "thermal_capacitances": {
+    "description": "Thermal capacitances for head, oil, and cylinder nodes",
+    "C_hd": 16291.233552939322,
+    "C_oil": 234.71850863443342,
+    "C_c": 500.0
+  },
+  "cooling_conductances": {
+    "description": "Cooling-airflow conductances with V_TAS^0.8 * rho^0.8 form",
+    "UA_hd_nominal": 58.6138303599155,
+    "UA_oc_nominal": 382.47363857983265,
+    "UA_c_nominal": 524.4360879885431
+  },
+  "asymmetry_factors": {
+    "description": "Fixed per-cylinder asymmetry factors a_i [FIT] - rear cylinders run hotter",
+    "a_values": [
+      0.0,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "description_note": "Values represent relative cooling efficiency differences"
+  },
+  "heat_transfer_to_head": {
+    "description": "Fraction of heat going to head vs exhaust",
+    "Q_to_head_fraction": 0.3,
+    "Q_to_head_per_cylinder": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ]
+  },
+  "friction_heat": {
+    "description": "Fraction of friction heat going to oil",
+    "friction_to_oil_fraction": 0.7
+  },
+  "oil_viscosity": {
+    "description": "Oil viscosity model mu(T_oil) - Vogel/Walther fit",
+    "model_type": "Vogel",
+    "parameters": {
+      "A": -3.5,
+      "B": 1200.0,
+      "C": 150.0
+    },
+    "valid_range": [
+      273.15,
+      393.15
+    ]
+  },
+  "heat_exchanger": {
+    "description": "Head-oil heat exchanger conductance",
+    "UA_ho": 15.0
+  },
+  "oil_pump": {
+    "description": "Oil pump pressure model: p_oil = k_oilpump*omega*mu_oil/(k_oilleak+k_oilclear*omega)",
+    "k_oilpump": 146576663.40817544,
+    "k_oilleak": 7507.410431820708,
+    "k_oilclear": 17.667020594280128,
+    "provenance": {
+      "procedure": "least-squares fit against real Rotax 915iS OIL PRES (CAN) vs RPM/T_oil data",
+      "source": "[FIT]",
+      "fit_source": "NTSB docket WPR22LA211",
+      "n_samples": 20484,
+      "rmse_psi": 13.313806929167793,
+      "caveat": "Previously hardcoded literals (3000, 500, 100) produced ~1-2 Pa predicted oil pressure vs real ~300-450 kPa -- off by 5 orders of magnitude. This is a real fit, not a placeholder."
+    }
+  }
+}

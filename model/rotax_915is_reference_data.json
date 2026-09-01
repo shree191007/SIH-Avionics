@@ -1,0 +1,86 @@
+{
+  "description": "Real published Rotax 915 iS A/C24 performance and limits data, extracted from the official BRP-Rotax Operator's Manual. Intended as [ROTAX]-tagged Phase A anchor data. The full RPM/MAP power+BSFC lookup table is NOT published in the operator's manual PDF -- BRP-Rotax only distributes it as a proprietary interactive 'Performance and Fuel Consumption Model' tool on flyrotax.com/service/technical-documentation.html, which is not scrapable/downloadable as a static table. The values below are the real numeric anchor points and operating limits that ARE published in the manual text.",
+  "source": {
+    "document": "OPERATORS MANUAL FOR ROTAX ENGINE TYPE 915 i A / C24 SERIES",
+    "publisher": "BRP-Rotax",
+    "revision": "Rev.3, Ed.0/July 01 2021",
+    "url": "https://www.rotax-owner.com/pdf/OM_915iAC24Series.pdf",
+    "retrieved": "2026-08-30",
+    "note": "Fetched directly (curl); WebFetch tool was blocked with HTTP 403 on this host, so content was pulled as raw PDF bytes and parsed with pypdf."
+  },
+  "geometry": {
+    "bore_mm": 84,
+    "stroke_mm": 61,
+    "displacement_cm3": 1352,
+    "compression_ratio": 8.2,
+    "cylinders": 4,
+    "configuration": "4-stroke, 4-cylinder flat, turbocharged, intercooled, liquid-cooled heads, ram-air cooled cylinders",
+    "page": "7-2 (7.1.2 Technical data)"
+  },
+  "power_anchors_ROTAX": {
+    "description": "The only two numeric (RPM, power) pairs actually published in the manual text. Real data, not fabricated -- but only 2 points, not a full curve.",
+    "takeoff": {"n_rpm": 5800, "power_kw": 104, "duration_limit": "5 min max"},
+    "max_continuous": {"n_rpm": 5500, "power_kw": 99, "note": "without governor"},
+    "critical_altitude_ft": 15000,
+    "power_formula_approx": "ObservedPower[kW] ~= -6.3264 + 0.0169 * Airflow[g/min]",
+    "page": "2-2 (2.1 Operating limits)"
+  },
+  "manifold_pressure_targets": {
+    "at_5800_rpm_mbar": 1520,
+    "at_5500_rpm_mbar": 1450,
+    "range_hpa": {"min": 60, "max": 1730},
+    "valid_temp_range_c": [25, 35],
+    "page": "2-4"
+  },
+  "engine_speed_limits_rpm": {
+    "idle": 1800,
+    "max": 5800,
+    "max_duration": "5 minutes",
+    "max_continuous": 5500,
+    "page": "2-2"
+  },
+  "oil_limits": {
+    "pressure_bar": {
+      "normal_above_3500rpm": [2.0, 5.0],
+      "min_below_3500rpm": 0.8,
+      "max_cold_start": 7.0
+    },
+    "temperature_c": {
+      "start_min": -20,
+      "takeoff_min": 50,
+      "normal_range": [50, 130],
+      "note": "condensation risk if run below 90-110C; reach 100C at least once/day"
+    },
+    "consumption_max_l_per_h": 0.06,
+    "page": "2-4 to 2-9"
+  },
+  "coolant_limits": {
+    "temperature_c": {
+      "start_min": -20,
+      "normal_max": 120
+    },
+    "page": "2-5"
+  },
+  "egt_limits": {
+    "max_c": 950,
+    "egt_split_max_c_above_3lph_fuel_flow": 200,
+    "egt_split_max_c_below_3lph_fuel_flow": 500,
+    "page": "2-5 to 2-6"
+  },
+  "ambient_limits": {
+    "temperature_c": {
+      "ground_ops_max": 50,
+      "normal_operation": [-40, 50]
+    },
+    "page": "2-6"
+  },
+  "fuel_pressure_bar": {
+    "normal_range": [2.9, 3.2],
+    "transient_exceedance_max_3s": [2.5, 3.5],
+    "page": "2-6"
+  },
+  "usage_notes": [
+    "These anchor points can be used to sanity-check / lightly re-anchor the Phase A gas-path fit (steady-state P_brake at 5500rpm/1450mbar should be ~99kW, at 5800rpm/1520mbar should be ~104kW) but cannot replace a real bicubic eta_vol(N,p_im) and eta_ind_0(lambda,N,p_im) surface fit -- that requires the proprietary Rotax Performance and Fuel Consumption Model, which was not accessible.",
+    "Oil pressure, oil temperature, coolant temperature, and EGT limits above are real physical bounds and should replace any [ASSUMED] placeholder limits used for RUL failure-threshold computation (02_physics_twin_residuals.md L6 theta_j^fail solver) and for TelemetryFrame validity bounds."
+  ]
+}

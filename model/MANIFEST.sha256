@@ -1,0 +1,25 @@
+{
+  "format": "RFC 8785 canonical JSON",
+  "model_version": "1.0.0",
+  "regime_grid_version": "REGIME_GRID_V1",
+  "artifacts": {
+    "gaspath_params.json": {
+      "sha256": "placeholder_hash_gaspath_params",
+      "size_bytes": 2048
+    },
+    "thermal_params.json": {
+      "sha256": "placeholder_hash_thermal_params",
+      "size_bytes": 2048
+    },
+    "noise_model.json": {
+      "sha256": "placeholder_hash_noise_model",
+      "size_bytes": 2048
+    },
+    "regime_grid_v1.json": {
+      "sha256": "placeholder_hash_regime_grid",
+      "size_bytes": 1024
+    }
+  },
+  "calibration_manifest_hash": "placeholder_calibration_manifest_hash",
+  "schema_version": "1.0.0"
+}

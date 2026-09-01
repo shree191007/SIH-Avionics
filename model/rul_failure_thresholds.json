@@ -1,0 +1,134 @@
+{
+  "description": "Physics-derived RUL failure thresholds (04_ml_rul_mission_probe.md Sec 2.4). Computed via rul/failure_threshold_solver.py: binary search of each health parameter against a real Rotax 915iS operator's-manual limit (CHT/coolant, EGT, oil pressure) or a documented [ASSUMED] climb-power fraction where no real airframe-specific limit is available, at a 200-step (20s) equilibrated stress operating point.",
+  "source": "[FIT]",
+  "solver": "rul/failure_threshold_solver.py:solve_failure_threshold",
+  "solve_time_s": 32.59031796455383,
+  "thresholds": {
+    "0": {
+      "theta_name": "theta_vol",
+      "threshold_value": 0.78203125,
+      "limit_description": "P_brake < 59.4kW ([ASSUMED] 60% of the real 99kW max-continuous anchor -- real MTOW climb-power requirement not available) at 5500rpm climb, ISA+20",
+      "operating_point": {
+        "stress_scenario": "Minimum power for required rate of climb at MTOW",
+        "n_rpm": 5500.0,
+        "map_pa": 145000.0,
+        "t_amb": 298.4,
+        "v_tas": 35.0,
+        "h_p": 1500.0
+      },
+      "direction": "below"
+    },
+    "1": {
+      "theta_name": "theta_comb",
+      "threshold_value": 0.82421875,
+      "limit_description": "EGT > 950C (real Rotax EGT limit) at lean cruise, ISA+20",
+      "operating_point": {
+        "stress_scenario": "EGT (misfire/knock proxy) at leanest commanded cruise mixture",
+        "n_rpm": 5000.0,
+        "map_pa": 120000.0,
+        "t_amb": 288.65,
+        "v_tas": 60.0,
+        "h_p": 3000.0
+      },
+      "direction": "below"
+    },
+    "2": {
+      "theta_name": "theta_cool",
+      "threshold_value": 0.38125,
+      "limit_description": "CHT > 120C (real Rotax coolant limit) at 5500rpm climb, ISA+20",
+      "operating_point": {
+        "stress_scenario": "CHT/coolant limit at max continuous power in climb",
+        "n_rpm": 5500.0,
+        "map_pa": 145000.0,
+        "t_amb": 298.4,
+        "v_tas": 35.0,
+        "h_p": 1500.0
+      },
+      "direction": "below"
+    },
+    "3": {
+      "theta_name": "theta_inj1",
+      "threshold_value": 0.8347656250000001,
+      "limit_description": "EGT > 950C (real Rotax EGT limit) at lean cruise, ISA+20",
+      "operating_point": {
+        "stress_scenario": "EGT (misfire/knock proxy) at leanest commanded cruise mixture",
+        "n_rpm": 5000.0,
+        "map_pa": 120000.0,
+        "t_amb": 288.65,
+        "v_tas": 60.0,
+        "h_p": 3000.0
+      },
+      "direction": "below"
+    },
+    "4": {
+      "theta_name": "theta_inj2",
+      "threshold_value": 0.8347656250000001,
+      "limit_description": "EGT > 950C (real Rotax EGT limit) at lean cruise, ISA+20",
+      "operating_point": {
+        "stress_scenario": "EGT (misfire/knock proxy) at leanest commanded cruise mixture",
+        "n_rpm": 5000.0,
+        "map_pa": 120000.0,
+        "t_amb": 288.65,
+        "v_tas": 60.0,
+        "h_p": 3000.0
+      },
+      "direction": "below"
+    },
+    "5": {
+      "theta_name": "theta_inj3",
+      "threshold_value": 0.8347656250000001,
+      "limit_description": "EGT > 950C (real Rotax EGT limit) at lean cruise, ISA+20",
+      "operating_point": {
+        "stress_scenario": "EGT (misfire/knock proxy) at leanest commanded cruise mixture",
+        "n_rpm": 5000.0,
+        "map_pa": 120000.0,
+        "t_amb": 288.65,
+        "v_tas": 60.0,
+        "h_p": 3000.0
+      },
+      "direction": "below"
+    },
+    "6": {
+      "theta_name": "theta_inj4",
+      "threshold_value": 0.8347656250000001,
+      "limit_description": "EGT > 950C (real Rotax EGT limit) at lean cruise, ISA+20",
+      "operating_point": {
+        "stress_scenario": "EGT (misfire/knock proxy) at leanest commanded cruise mixture",
+        "n_rpm": 5000.0,
+        "map_pa": 120000.0,
+        "t_amb": 288.65,
+        "v_tas": 60.0,
+        "h_p": 3000.0
+      },
+      "direction": "below"
+    },
+    "7": {
+      "theta_name": "theta_oilp",
+      "threshold_value": 0.433984375,
+      "limit_description": "p_oil < 0.8bar (real Rotax minimum below 3500rpm) at hot idle",
+      "operating_point": {
+        "stress_scenario": "Minimum oil pressure at hot idle",
+        "n_rpm": 1800.0,
+        "map_pa": 40000.0,
+        "t_amb": 298.4,
+        "v_tas": 0.0,
+        "h_p": 0.0
+      },
+      "direction": "below"
+    },
+    "8": {
+      "theta_name": "theta_fric",
+      "threshold_value": 1.53515625,
+      "limit_description": "P_brake < 59.4kW ([ASSUMED] 60% of the real 99kW max-continuous anchor -- real MTOW climb-power requirement not available) at 5500rpm climb, ISA+20",
+      "operating_point": {
+        "stress_scenario": "Minimum power for required rate of climb at MTOW",
+        "n_rpm": 5500.0,
+        "map_pa": 145000.0,
+        "t_amb": 298.4,
+        "v_tas": 35.0,
+        "h_p": 1500.0
+      },
+      "direction": "above"
+    }
+  }
+}

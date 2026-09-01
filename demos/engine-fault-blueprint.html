@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GCS 3D Fault Blueprint — Rotax 915 iS (mock)</title>
+<style>
+  :root{
+    --critical:#ff3b30;
+    --caution:#ffb100;
+    --ambiguous:#c084fc;
+    --borrowed:#38bdf8;
+    --nominal:#3ddc84;
+    --probe:#f472b6;
+    --ink-400:#5a6472;
+    --ink-900:#0a0d12;
+    --panel-bg:#10151cdd;
+    --panel-border:#2a3341;
+    --text:#dbe4ee;
+    --text-dim:#8b97a6;
+  }
+  html,body{margin:0;padding:0;width:100%;height:100%;background:var(--ink-900);
+    font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;color:var(--text);overflow:hidden;}
+  #scene{position:absolute;inset:0;}
+  canvas{display:block;}
+
+  #hud-top{position:absolute;top:0;left:0;right:0;padding:12px 16px;
+    display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none;z-index:10;}
+  #hud-top .title{pointer-events:auto;}
+  #hud-top h1{font-size:13px;letter-spacing:.06em;margin:0 0 2px;color:var(--text);text-transform:uppercase;}
+  #hud-top .sub{font-size:11px;color:var(--text-dim);}
+
+  #scenario-panel{position:absolute;top:12px;right:16px;width:300px;
+    background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:6px;
+    padding:10px;pointer-events:auto;z-index:20;max-height:92vh;overflow-y:auto;}
+  #scenario-panel h2{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-dim);margin:0 0 8px;}
+  .scenario-group{margin-bottom:10px;}
+  .scenario-group h3{font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-400);margin:0 0 4px;}
+  .scenario-btn{display:block;width:100%;text-align:left;background:#161d27;
+    border:1px solid var(--panel-border);color:var(--text);font-family:inherit;
+    font-size:10.5px;padding:5px 7px;margin:3px 0;border-radius:4px;cursor:pointer;
+    transition:background .12s,border-color .12s;}
+  .scenario-btn:hover{background:#1c2530;border-color:#3a4658;}
+  .scenario-btn.active{border-color:var(--nominal);background:#132018;}
+  .swatch{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;}
+
+  #legend{position:absolute;bottom:12px;left:16px;background:var(--panel-bg);
+    border:1px solid var(--panel-border);border-radius:6px;padding:8px 10px;
+    font-size:10px;color:var(--text-dim);z-index:10;pointer-events:none;}
+  #legend div{margin:2px 0;}
+  #legend .swatch{width:8px;height:8px;}
+
+  #labels{position:absolute;inset:0;pointer-events:none;z-index:15;}
+  .flabel{position:absolute;transform:translate(-50%,-130%);
+    background:#0d1218e6;border:1px solid var(--panel-border);border-radius:4px;
+    padding:4px 7px;font-size:10px;white-space:nowrap;pointer-events:none;}
+  .flabel .h{font-weight:600;font-size:10.5px;}
+  .flabel .d{color:var(--text-dim);font-size:9.5px;}
+  .flabel .badge{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:3px;
+    font-size:8.5px;background:var(--probe);color:#160a12;font-weight:700;}
+
+  #drawer{position:absolute;bottom:12px;right:16px;width:300px;
+    background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:6px;
+    padding:12px;z-index:20;display:none;}
+  #drawer.open{display:block;}
+  #drawer h2{font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--text-dim);margin:0 0 8px;display:flex;justify-content:space-between;}
+  #drawer .close{cursor:pointer;color:var(--text-dim);pointer-events:auto;}
+  #drawer .row{display:flex;justify-content:space-between;font-size:11px;margin:4px 0;}
+  #drawer .row .k{color:var(--text-dim);}
+  #drawer .eqn{font-size:10px;color:var(--text-dim);margin-top:8px;padding-top:8px;
+    border-top:1px solid var(--panel-border);line-height:1.5;}
+  #hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+    font-size:10px;color:var(--text-dim);z-index:10;pointer-events:none;}
+</style>
+</head>
+<body>
+
+<div id="scene"></div>
+<div id="labels"></div>
+
+<div id="hud-top">
+  <div class="title">
+    <h1>GCS · 3D Fault Blueprint</h1>
+    <div class="sub">Rotax 915 iS · schematic · mock AttributionFrame stream</div>
+  </div>
+</div>
+
+<div id="scenario-panel">
+  <h2>Mock AttributionFrame</h2>
+  <div id="scenario-list"></div>
+</div>
+
+<div id="legend">
+  <div><span class="swatch" style="background:var(--critical)"></span>NAMED / critical</div>
+  <div><span class="swatch" style="background:var(--ambiguous)"></span>AMBIGUOUS</div>
+  <div><span class="swatch" style="background:var(--borrowed)"></span>BORROWED (fleet)</div>
+  <div><span class="swatch" style="background:var(--caution)"></span>DEGRADED_INPUT / sensor bias</div>
+  <div><span class="swatch" style="background:var(--probe)"></span>PROBE badge</div>
+  <div><span class="swatch" style="background:var(--ink-400)"></span>INVALID (desaturated)</div>
+</div>
+
+<div id="drawer">
+  <h2><span id="drawer-title">—</span><span class="close" id="drawer-close">✕</span></h2>
+  <div id="drawer-body"></div>
+</div>
+
+<div id="hint">drag to orbit · scroll to zoom · click a highlighted part to inspect</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================
+   §1 palette — flat, unlit, six semantic values, no gradients
+   ============================================================ */
+const COLORS = {
+  critical: 0xff3b30,
+  caution:  0xffb100,
+  ambiguous:0xc084fc,
+  borrowed: 0x38bdf8,
+  nominal:  0x3ddc84,
+  probe:    0xf472b6,
+  ink400:   0x5a6472,
+};
+
+/* ============================================================
+   Renderer / scene / camera — no lights (MeshBasicMaterial only)
+   ============================================================ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0d12);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+container.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+
+/* §6 — exact camera model */
+const camState = { target: new THREE.Vector3(0, 1.3, 0), radius: 9.5, theta: Math.PI / 3.6, phi: Math.PI / 2.7 };
+function updateCamera() {
+  const { target, radius, theta, phi } = camState;
+  camera.position.x = target.x + radius * Math.sin(phi) * Math.sin(theta);
+  camera.position.y = target.y + radius * Math.cos(phi);
+  camera.position.z = target.z + radius * Math.sin(phi) * Math.cos(theta);
+  camera.lookAt(target);
+}
+updateCamera();
+
+/* drag / scroll interaction, exact coefficients from §6 */
+let dragging = false, lastX = 0, lastY = 0;
+renderer.domElement.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('mouseup', () => dragging = false);
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  camState.theta -= dx * 0.006;
+  camState.phi = Math.min(Math.PI - 0.35, Math.max(0.35, camState.phi - dy * 0.006));
+  updateCamera();
+});
+renderer.domElement.addEventListener('wheel', e => {
+  e.preventDefault();
+  camState.radius = Math.min(18, Math.max(4.5, camState.radius + e.deltaY * 0.01));
+  updateCamera();
+}, { passive: false });
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============================================================
+   Helpers — flat transparent housing + wireframe overlay
+   ============================================================ */
+function transparentMesh(geo, opacity = 0.14) {
+  const mat = new THREE.MeshBasicMaterial({ color: COLORS.ink400, transparent: true, opacity, side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(geo, mat);
+  const wire = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x8b97a6, transparent: true, opacity: 0.55 }));
+  mesh.add(wire);
+  return mesh;
+}
+function solidMesh(geo, hex) {
+  return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: hex }));
+}
+
+/* ============================================================
+   §2 — Scene composition, component -> physics binding
+   Every mesh below mirrors the table in 06_gcs_3d_fault_blueprint.md §2
+   ============================================================ */
+const engine = new THREE.Group();
+scene.add(engine);
+
+const CYL_X = [-1.6, -0.55, 0.55, 1.6];
+
+// Crankcase block — housing, no direct theta
+const crankcase = transparentMesh(new THREE.BoxGeometry(4.4, 1.1, 1.6), 0.10);
+crankcase.position.set(0, 0.55, 0);
+engine.add(crankcase);
+
+// Crankshaft — theta_fric
+const crankshaft = solidMesh(new THREE.CylinderGeometry(0.09, 0.09, 4.0, 20), COLORS.ink400);
+crankshaft.rotation.z = Math.PI / 2;
+crankshaft.position.set(0, 0.55, 0);
+engine.add(crankshaft);
+
+// Cylinders, heads, injectors, EGT probes, combustion markers ×4
+const cylinders = []; // index 0..3 = cyl 1..4
+CYL_X.forEach((x, i) => {
+  const cyl = solidMesh(new THREE.CylinderGeometry(0.32, 0.34, 1.3, 24), COLORS.ink400);
+  cyl.material.transparent = true; cyl.material.opacity = 0.12;
+  cyl.position.set(x, 1.75, 0);
+  engine.add(cyl);
+
+  const head = transparentMesh(new THREE.BoxGeometry(0.62, 0.22, 0.62), 0.12);
+  head.position.set(x, 2.5, 0);
+  engine.add(head);
+
+  const injector = solidMesh(new THREE.ConeGeometry(0.07, 0.22, 12), COLORS.ink400);
+  injector.position.set(x, 2.35, -0.42);
+  engine.add(injector);
+
+  const egtProbe = solidMesh(new THREE.SphereGeometry(0.06, 12, 12), COLORS.ink400);
+  egtProbe.position.set(x, 2.1, 0.5);
+  engine.add(egtProbe);
+
+  const combustion = solidMesh(new THREE.SphereGeometry(0.10, 12, 12), COLORS.ink400);
+  combustion.position.set(x, 2.03, 0);
+  engine.add(combustion);
+
+  cylinders.push({ index: i + 1, cyl, head, injector, egtProbe, combustion });
+});
+
+// Cooling jacket — theta_cool
+const coolingJacket = transparentMesh(new THREE.BoxGeometry(4.8, 0.55, 1.0), 0.10);
+coolingJacket.position.set(0, 2.75, 0);
+engine.add(coolingJacket);
+
+// CHT sensor — b_CHT (offset from jacket: bias != physical path)
+const chtSensor = solidMesh(new THREE.SphereGeometry(0.07, 12, 12), COLORS.ink400);
+chtSensor.position.set(2.1, 2.75, 0.42);
+engine.add(chtSensor);
+
+// Oil pan — sump, no direct theta
+const oilPan = transparentMesh(new THREE.BoxGeometry(3.8, 0.4, 1.3), 0.10);
+oilPan.position.set(0, -0.2, 0);
+engine.add(oilPan);
+
+// Oil pump — theta_oilp
+const oilPump = solidMesh(new THREE.CylinderGeometry(0.16, 0.16, 0.3, 16), COLORS.ink400);
+oilPump.rotation.z = Math.PI / 2;
+oilPump.position.set(-2.1, 0, 0.5);
+engine.add(oilPump);
+
+// Oil pressure sensor — b_poil (§8/§9 roadmap item 1: added, offset from pump)
+const oilPressureSensor = solidMesh(new THREE.SphereGeometry(0.06, 12, 12), COLORS.ink400);
+oilPressureSensor.position.set(-2.1, 0.32, 0.85);
+engine.add(oilPressureSensor);
+
+// Exhaust segments ×4 + rear pipe — exhaust path, no direct theta
+const exhaustSegs = [];
+CYL_X.forEach(x => {
+  const seg = solidMesh(new THREE.CylinderGeometry(0.05, 0.05, 0.9, 10), COLORS.ink400);
+  seg.material.transparent = true; seg.material.opacity = 0.35;
+  seg.rotation.x = Math.PI / 2.4;
+  seg.position.set(x, 1.6, 0.9);
+  engine.add(seg);
+  exhaustSegs.push(seg);
+});
+const rearPipe = solidMesh(new THREE.CylinderGeometry(0.06, 0.06, 3.6, 10), COLORS.ink400);
+rearPipe.material.transparent = true; rearPipe.material.opacity = 0.35;
+rearPipe.rotation.z = Math.PI / 2;
+rearPipe.position.set(0, 1.3, 1.35);
+engine.add(rearPipe);
+
+// Turbo — boost path, deliberately not a theta
+const turbo = transparentMesh(new THREE.SphereGeometry(0.28, 20, 20), 0.16);
+turbo.position.set(2.35, 1.15, 1.35);
+engine.add(turbo);
+
+// Intake manifold — theta_vol
+const intakeManifold = solidMesh(new THREE.CylinderGeometry(0.14, 0.14, 2.0, 16), COLORS.ink400);
+intakeManifold.rotation.z = Math.PI / 2;
+intakeManifold.position.set(-2.75, 1.0, -0.62);
+engine.add(intakeManifold);
+
+/* ============================================================
+   §3/§7 — paramToMesh lookup table (generalized: all 4 injectors,
+   all 4 EGT probes — not just the two demo examples in the
+   original prototype). This is the only new piece of code needed
+   to move from "one example per class" to the full vector (§3, §9.2).
+   ============================================================ */
+const PARAM_META = {
+  theta_vol:  { mesh: () => intakeManifold, label: 'θ_vol',  nominal: 1.0, range: [0.80, 1.05], eqn: 'ṁair = θ_vol·ηvol(N,p_im)·Vd·(N/120)·p_im/(R_air·T_im)' },
+  theta_comb: { mesh: () => cylinders.map(c => c.combustion), label: 'θ_comb', nominal: 1.0, range: [0.80, 1.05], eqn: 'η_ind = θ_comb·η_ind,0(λ,N,p_im)' },
+  theta_cool: { mesh: () => coolingJacket, label: 'θ_cool', nominal: 1.0, range: [0.70, 1.10], eqn: 'C_hd·dT_hd/dt = … − θ_cool·UA_hd·(T_hd−T_amb) …' },
+  theta_oilp: { mesh: () => oilPump, label: 'θ_oilp', nominal: 1.0, range: [0.75, 1.05], eqn: 'p_oil = θ_oilp·[k_pump·N·μ(T_oil)/(k_leak+k_clear·N)] + b_poil' },
+  theta_fric: { mesh: () => crankshaft, label: 'θ_fric', nominal: 1.0, range: [0.95, 1.30], eqn: 'FMEP = θ_fric·(c₀+c₁N+c₂N²)' },
+  b_CHT:      { mesh: () => chtSensor, label: 'b_CHT', nominal: 0.0, range: '±3σ', eqn: 'CHT sensor bias, offset from cooling jacket (cross-modal axis)' },
+  b_poil:     { mesh: () => oilPressureSensor, label: 'b_poil', nominal: 0.0, range: '±3σ', eqn: 'p_oil = θ_oilp·[…] + b_poil — same equation, additive term' },
+};
+for (let i = 1; i <= 4; i++) {
+  PARAM_META[`theta_inj[${i}]`] = { mesh: () => cylinders[i - 1].injector, label: `θ_inj[${i}]`, nominal: 1.0, range: [0.80, 1.10], eqn: `ṁf,cyl[${i}] = θ_inj[${i}]·ṁair/(4·λcmd·AFRst)` };
+  PARAM_META[`b_EGT[${i}]`]     = { mesh: () => cylinders[i - 1].egtProbe, label: `b_EGT[${i}]`, nominal: 0.0, range: '±3σ', eqn: `EGT_${i} = T_exh,${i} − k_probe·(…) + b_EGT[${i}]` };
+}
+// non-theta input targets used by DEGRADED_INPUT
+const INPUT_META = {
+  boost:  { mesh: () => turbo, label: 'boost/wastegate input (MAP/TPS)' },
+  intake: { mesh: () => intakeManifold, label: 'intake path input' },
+};
+
+function paramToMesh(key) {
+  const meta = PARAM_META[key];
+  if (!meta) return null;
+  const m = meta.mesh();
+  return Array.isArray(m) ? m : [m];
+}
+
+/* ============================================================
+   Highlight system — reticles + labels, N simultaneous findings (§5)
+   ============================================================ */
+const reticleGroup = new THREE.Group();
+scene.add(reticleGroup);
+let activeFindings = []; // [{ meshes:[], color, label, sub, badge, reticles:[], t0 }]
+
+function makeReticle(mesh, hexColor) {
+  const box = new THREE.Box3().setFromObject(mesh);
+  const size = box.getSize(new THREE.Vector3());
+  const radius = Math.max(size.x, size.y, size.z) * 0.75 + 0.08;
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 0.92, radius, 40),
+    new THREE.MeshBasicMaterial({ color: hexColor, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+  );
+  const worldPos = new THREE.Vector3();
+  mesh.getWorldPosition(worldPos);
+  ring.position.copy(worldPos);
+  ring.lookAt(camera.position);
+  reticleGroup.add(ring);
+  return ring;
+}
+
+function clearFindings() {
+  activeFindings.forEach(f => f.reticles.forEach(r => reticleGroup.remove(r)));
+  activeFindings = [];
+  resetAllMaterials();
+  document.getElementById('labels').innerHTML = '';
+}
+
+function resetAllMaterials() {
+  engine.traverse(o => {
+    if (o.isMesh && o.userData.baseColor !== undefined) {
+      o.material.color.setHex(o.userData.baseColor);
+      o.material.opacity = o.userData.baseOpacity;
+      o.material.transparent = true;
+    }
+  });
+}
+
+// cache base colors/opacities for reset
+engine.traverse(o => {
+  if (o.isMesh) {
+    o.userData.baseColor = o.material.color.getHex();
+    o.userData.baseOpacity = o.material.opacity !== undefined ? o.material.opacity : 1;
+    o.material.transparent = true;
+  }
+});
+
+function highlightMesh(mesh, hex) {
+  mesh.material.color.setHex(hex);
+  mesh.material.opacity = 1;
+}
+
+function desaturateWholeEngine() {
+  engine.traverse(o => {
+    if (o.isMesh) { o.material.color.setHex(COLORS.ink400); o.material.opacity = Math.min(o.userData.baseOpacity, 0.12); }
+  });
+}
+
+let wireframePulseUntil = 0;
+let dashedOutlineActive = false;
+let dashedOutlineMesh = null;
+
+function addDashedOutline() {
+  removeDashedOutline();
+  const box = new THREE.Box3().setFromObject(engine);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const geo = new THREE.EdgesGeometry(new THREE.BoxGeometry(size.x + 0.6, size.y + 0.6, size.z + 0.6));
+  const mat = new THREE.LineDashedMaterial({ color: COLORS.ambiguous, dashSize: 0.15, gapSize: 0.1, transparent: true, opacity: 0.85 });
+  const line = new THREE.LineSegments(geo, mat);
+  line.computeLineDistances();
+  line.position.copy(center);
+  scene.add(line);
+  dashedOutlineMesh = line;
+  dashedOutlineActive = true;
+}
+function removeDashedOutline() {
+  if (dashedOutlineMesh) { scene.remove(dashedOutlineMesh); dashedOutlineMesh = null; }
+  dashedOutlineActive = false;
+}
+
+/* ============================================================
+   §7 — renderAttribution(frame): the real live-data binding,
+   generalized to accept simultaneous findings and every verdict
+   state in §4 (mock frames stand in for the real telemetry stream).
+   ============================================================ */
+function renderAttribution(frame) {
+  clearFindings();
+  removeDashedOutline();
+
+  if (frame.verdict === 'INVALID') {
+    desaturateWholeEngine();
+    return;
+  }
+
+  if (frame.verdict === 'MODEL_SATURATED') {
+    wireframePulseUntil = performance.now() + 900; // one pulse
+    return;
+  }
+
+  if (frame.verdict === 'ANOMALOUS_UNKNOWN') {
+    addDashedOutline();
+    return;
+  }
+
+  const findings = [];
+
+  if (frame.verdict === 'NAMED' || frame.verdict === 'BORROWED') {
+    const meshes = paramToMesh(frame.named);
+    if (meshes) {
+      findings.push({
+        meshes,
+        color: frame.verdict === 'BORROWED' ? COLORS.borrowed : COLORS.critical,
+        label: describeNamed(frame),
+        badge: frame.probe_available ? probeBadge(frame) : null,
+      });
+    }
+  }
+
+  if (frame.verdict === 'AMBIGUOUS' || frame.verdict === 'ABSTAIN' || frame.verdict === 'PROBE_REQUIRED') {
+    (frame.ambiguous_set || []).forEach(j => {
+      const meshes = paramToMesh(j);
+      if (!meshes) return;
+      findings.push({
+        meshes,
+        color: COLORS.ambiguous,
+        label: `AMBIGUOUS — ${PARAM_META[j].label} · |cos| = ${(frame.reason && frame.reason.cos != null) ? frame.reason.cos.toFixed(2) : '—'}`,
+        badge: (frame.verdict !== 'AMBIGUOUS') ? probeBadge(frame) : null,
+      });
+    });
+  }
+
+  if (frame.verdict === 'DEGRADED_INPUT') {
+    const meshes = INPUT_META[frame.input] ? [INPUT_META[frame.input].mesh()] : null;
+    if (meshes) {
+      findings.push({
+        meshes,
+        color: COLORS.caution,
+        label: `DEGRADED_INPUT — ${INPUT_META[frame.input].label} dropout`,
+        badge: null,
+      });
+    }
+  }
+
+  applyFindings(findings);
+}
+
+function probeBadge(frame) {
+  return `probe available — ${frame.probe_Nh ?? '—'}h, ${frame.probe_life_pct ?? '—'}% life`;
+}
+
+function describeNamed(frame) {
+  const meta = PARAM_META[frame.named];
+  if (frame.verdict === 'BORROWED') {
+    return `BORROWED · R²=${frame.r2?.toFixed(2)} · epoch ${frame.fleet_epoch}`;
+  }
+  const val = frame.value != null ? frame.value.toFixed(2) : meta.nominal.toFixed(2);
+  const crlb = frame.crlb ? `CRLB[${frame.crlb[0].toFixed(2)},${frame.crlb[1].toFixed(2)}]` : '';
+  return `${meta.label}=${val}, ${crlb}`;
+}
+
+function applyFindings(findings) {
+  findings.forEach(f => {
+    const reticles = f.meshes.map(m => makeReticle(m, f.color));
+    f.meshes.forEach(m => highlightMesh(m, f.color));
+    activeFindings.push({ ...f, reticles, t0: performance.now() });
+  });
+  renderLabels();
+}
+
+/* ============================================================
+   Labels — screen-space projection of each finding's centroid (§6)
+   ============================================================ */
+function renderLabels() {
+  const container = document.getElementById('labels');
+  container.innerHTML = '';
+  activeFindings.forEach((f, idx) => {
+    const centroid = new THREE.Vector3();
+    f.meshes.forEach(m => { const p = new THREE.Vector3(); m.getWorldPosition(p); centroid.add(p); });
+    centroid.divideScalar(f.meshes.length);
+    const el = document.createElement('div');
+    el.className = 'flabel';
+    el.style.borderColor = '#' + f.color.toString(16).padStart(6, '0');
+    el.innerHTML = `<div class="h">${f.label}</div>${f.badge ? `<span class="badge">${f.badge}</span>` : ''}`;
+    container.appendChild(el);
+    f._labelEl = el;
+  });
+}
+
+function updateLabelPositions() {
+  activeFindings.forEach(f => {
+    if (!f._labelEl) return;
+    const centroid = new THREE.Vector3();
+    f.meshes.forEach(m => { const p = new THREE.Vector3(); m.getWorldPosition(p); centroid.add(p); });
+    centroid.divideScalar(f.meshes.length);
+    const ndc = centroid.clone().project(camera);
+    const x = (ndc.x * 0.5 + 0.5) * window.innerWidth;
+    const y = (-ndc.y * 0.5 + 0.5) * window.innerHeight;
+    f._labelEl.style.left = x + 'px';
+    f._labelEl.style.top = y + 'px';
+    f._labelEl.style.display = ndc.z > 1 ? 'none' : 'block';
+  });
+}
+
+/* ============================================================
+   §6 — reticle pulse: ring scales by 1 + 0.12*sin(t*0.003)
+   ============================================================ */
+function animateReticles(t) {
+  activeFindings.forEach(f => {
+    f.reticles.forEach(r => {
+      const s = 1 + 0.12 * Math.sin(t * 0.003);
+      r.scale.set(s, s, s);
+      r.lookAt(camera.position);
+    });
+  });
+}
+
+function animateWireframePulse(t) {
+  if (t > wireframePulseUntil) return;
+  const remaining = (wireframePulseUntil - t) / 900; // 1 -> 0
+  const pulse = 0.10 + 0.5 * Math.max(0, Math.sin(remaining * Math.PI));
+  engine.traverse(o => {
+    if (o.isLineSegments) o.material.opacity = pulse;
+  });
+}
+
+/* ============================================================
+   Click-to-inspect (§9 roadmap item 3) — raycast from mouse click
+   opens a mini Evidence Drawer for the parameter under the cursor.
+   ============================================================ */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const meshToParam = new Map();
+Object.keys(PARAM_META).forEach(key => {
+  const m = PARAM_META[key].mesh();
+  (Array.isArray(m) ? m : [m]).forEach(mesh => meshToParam.set(mesh, key));
+});
+
+renderer.domElement.addEventListener('click', e => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(engine.children, true);
+  for (const hit of hits) {
+    const key = meshToParam.get(hit.object);
+    if (key) { openDrawer(key); return; }
+  }
+});
+
+function openDrawer(key) {
+  const meta = PARAM_META[key];
+  document.getElementById('drawer-title').textContent = meta.label;
+  const rangeStr = Array.isArray(meta.range) ? `[${meta.range[0]}, ${meta.range[1]}]` : meta.range;
+  document.getElementById('drawer-body').innerHTML = `
+    <div class="row"><span class="k">nominal</span><span>${meta.nominal}</span></div>
+    <div class="row"><span class="k">admissible range</span><span>${rangeStr}</span></div>
+    <div class="eqn">${meta.eqn}</div>`;
+  document.getElementById('drawer').classList.add('open');
+}
+document.getElementById('drawer-close').onclick = () => document.getElementById('drawer').classList.remove('open');
+
+/* ============================================================
+   Mock AttributionFrame scenarios — stand-ins for the real stream,
+   one per §3/§4 state. "As of now" per user: real telemetry/replay
+   binding (§9 roadmap item 4) is not wired; these frames exercise
+   renderAttribution() exactly as a live frame would.
+   ============================================================ */
+const SCENARIOS = [
+  { group: 'NAMED — critical θ', key: 'named_theta_vol', label: 'θ_vol low (intake)',
+    frame: { verdict: 'NAMED', named: 'theta_vol', value: 0.83, crlb: [0.80, 0.87] } },
+  { group: 'NAMED — critical θ', key: 'named_theta_fric', label: 'θ_fric high (crankshaft)',
+    frame: { verdict: 'NAMED', named: 'theta_fric', value: 1.22, crlb: [1.15, 1.29] } },
+  { group: 'NAMED — critical θ', key: 'named_theta_oilp', label: 'θ_oilp low (oil pump)',
+    frame: { verdict: 'NAMED', named: 'theta_oilp', value: 0.79, crlb: [0.75, 0.83] } },
+  { group: 'NAMED — critical θ', key: 'named_inj3', label: 'θ_inj[3] low (injector 3)',
+    frame: { verdict: 'NAMED', named: 'theta_inj[3]', value: 0.86, crlb: [0.82, 0.90] } },
+  { group: 'NAMED — critical θ', key: 'named_inj1', label: 'θ_inj[1] high (injector 1)',
+    frame: { verdict: 'NAMED', named: 'theta_inj[1]', value: 1.08, crlb: [1.04, 1.12] } },
+
+  { group: 'NAMED — sensor bias', key: 'named_egt2', label: 'b_EGT[2] (probe 2)',
+    frame: { verdict: 'NAMED', named: 'b_EGT[2]', value: 22.4, crlb: [18.1, 26.7] } },
+  { group: 'NAMED — sensor bias', key: 'named_cht', label: 'b_CHT (CHT sensor)',
+    frame: { verdict: 'NAMED', named: 'b_CHT', value: 14.9, crlb: [11.2, 18.6] } },
+  { group: 'NAMED — sensor bias', key: 'named_poil', label: 'b_poil (oil pressure sensor)',
+    frame: { verdict: 'NAMED', named: 'b_poil', value: -6.3, crlb: [-8.9, -3.7] } },
+
+  { group: 'AMBIGUOUS', key: 'amb_cool_comb', label: 'θ_cool ↔ θ_comb (cross-modal pair)',
+    frame: { verdict: 'AMBIGUOUS', ambiguous_set: ['theta_cool', 'theta_comb'], reason: { cos: 0.94 } } },
+
+  { group: 'BORROWED (fleet-resolved)', key: 'borrowed_cool', label: 'θ_cool — fleet epoch 214',
+    frame: { verdict: 'BORROWED', named: 'theta_cool', r2: 0.94, fleet_epoch: 214 } },
+
+  { group: 'DEGRADED_INPUT', key: 'degraded_boost', label: 'boost input dropout (MAP/TPS)',
+    frame: { verdict: 'DEGRADED_INPUT', input: 'boost' } },
+
+  { group: 'Whole-engine states', key: 'invalid', label: 'INVALID — desaturate',
+    frame: { verdict: 'INVALID' } },
+  { group: 'Whole-engine states', key: 'saturated', label: 'MODEL_SATURATED — wireframe pulse',
+    frame: { verdict: 'MODEL_SATURATED' } },
+  { group: 'Whole-engine states', key: 'anomalous', label: 'ANOMALOUS_UNKNOWN — dashed outline',
+    frame: { verdict: 'ANOMALOUS_UNKNOWN' } },
+
+  { group: 'ABSTAIN / PROBE_REQUIRED', key: 'abstain', label: 'θ_cool ↔ θ_comb + probe badge',
+    frame: { verdict: 'ABSTAIN', ambiguous_set: ['theta_cool', 'theta_comb'], reason: { cos: 0.91 },
+             probe_available: true, probe_Nh: 3, probe_life_pct: 62 } },
+
+  { group: 'Simultaneous faults (§5)', key: 'simultaneous', label: 'NAMED θ_inj[3] + AMBIGUOUS pair',
+    frame: null /* handled specially below */ },
+];
+
+function runSimultaneous() {
+  clearFindings();
+  removeDashedOutline();
+  const f1 = paramToMesh('theta_inj[3]');
+  const f2 = paramToMesh('theta_cool');
+  const f3 = paramToMesh('theta_comb');
+  applyFindings([
+    { meshes: f1, color: COLORS.critical, label: describeNamed({ verdict: 'NAMED', named: 'theta_inj[3]', value: 0.86, crlb: [0.82, 0.90] }), badge: null },
+    { meshes: f2, color: COLORS.ambiguous, label: 'AMBIGUOUS — θ_cool · |cos| = 0.94', badge: null },
+    { meshes: f3, color: COLORS.ambiguous, label: 'AMBIGUOUS — θ_comb · |cos| = 0.94', badge: null },
+  ]);
+}
+
+const listEl = document.getElementById('scenario-list');
+const groups = {};
+SCENARIOS.forEach(s => { (groups[s.group] ||= []).push(s); });
+Object.keys(groups).forEach(groupName => {
+  const gDiv = document.createElement('div');
+  gDiv.className = 'scenario-group';
+  gDiv.innerHTML = `<h3>${groupName}</h3>`;
+  groups[groupName].forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'scenario-btn';
+    btn.dataset.key = s.key;
+    btn.innerHTML = `${s.label}`;
+    btn.onclick = () => {
+      document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('drawer').classList.remove('open');
+      if (s.key === 'simultaneous') runSimultaneous();
+      else renderAttribution(s.frame);
+    };
+    gDiv.appendChild(btn);
+  });
+  listEl.appendChild(gDiv);
+});
+
+/* ============================================================
+   Embedded mode — when this file is loaded inside the console's
+   Blueprint tile (an <iframe>), the console owns fault selection via
+   its own simulation clock. The demo picker below is for running this
+   file standalone (open it directly, or via demos/) — it stays fully
+   interactive there, but is hidden and inert when embedded, so there
+   aren't two competing controls (one instant, one simulated) fighting
+   over the same engine.
+   ============================================================ */
+const embedded = window.self !== window.top;
+if (embedded) {
+  document.getElementById('scenario-panel').style.display = 'none';
+  document.getElementById('hud-top').style.display = 'none'; // host page already labels this panel
+} else {
+  /* start on a NAMED example, standalone only */
+  document.querySelector('.scenario-btn[data-key="named_theta_vol"]').click();
+}
+
+/* ============================================================
+   External sync — lets a host page (e.g. the console's Overview
+   dashboard) drive this scenario picker via postMessage instead of
+   a real click, so global hotkey/scenario switching stays in sync
+   with whichever fault is highlighted here.
+   ============================================================ */
+function selectScenarioByKey(key) {
+  const btn = document.querySelector(`.scenario-btn[data-key="${key}"]`);
+  if (btn) btn.click();
+}
+window.addEventListener('message', (e) => {
+  if (!e.data) return;
+  if (e.data.type === 'setScenario' && typeof e.data.key === 'string') {
+    selectScenarioByKey(e.data.key);
+  } else if (e.data.type === 'clear') {
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('drawer').classList.remove('open');
+    clearFindings();
+    removeDashedOutline();
+  }
+});
+
+/* ============================================================
+   Render loop
+   ============================================================ */
+function tick(t) {
+  animateReticles(t);
+  animateWireframePulse(t);
+  updateLabelPositions();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

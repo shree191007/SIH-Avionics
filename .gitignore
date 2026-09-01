@@ -1,0 +1,29 @@
+# Real flight/telemetry data (26GB+, NGAFID/NTSB source data and derived
+# features) -- too large for git, not source code. See README.md for how
+# to obtain/regenerate it.
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+
+# Node / frontend
+gcs-console/node_modules/
+gcs-console/dist/
+
+# OS / editor cruft
+.DS_Store
+.vscode/
+.idea/
+
+# Agent-session artifacts (not project source)
+.agents/
+
+# Scratch logs from ad hoc test runs
+scratch_*.log

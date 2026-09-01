@@ -1,0 +1,25 @@
+{
+  "description": "REGIME_GRID_V1 - 12 core + 3 non-fingerprint bins",
+  "version": "REGIME_GRID_V1",
+  "phase_bins": ["CLIMB", "CRUISE", "DESCENT"],
+  "power_bins": ["LOW", "MID", "HIGH"],
+  "phase_definitions": {
+    "CLIMB_ROC_min": 1.5,
+    "DESCENT_ROC_max": -1.5,
+    "CRUISE_ROC_min": -1.5,
+    "CRUISE_ROC_max": 1.5
+  },
+  "power_definitions": {
+    "LOW_max": 0.45,
+    "MID_min": 0.45,
+    "MID_max": 0.75,
+    "HIGH_min": 0.75
+  },
+  "special_bins": ["IDLE", "TRANSIENT", "INVALID"],
+  "stability_criteria": {
+    "dN_dt_max": 30.0,
+    "dp_im_dt_max": 2.0,
+    "dT_hd_dt_max": 0.15,
+    "min_steady_s": 20.0
+  }
+}

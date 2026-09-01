@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* neutrals — instrument housing, brightened for legibility */
+  --ink-900: #10151A;
+  --ink-800: #1B222B;
+  --ink-700: #262F39;
+  --line-500: #47535F;
+  --ink-000: #F5F7F8;
+  --ink-400: #AAB7C2;
+
+  /* semantic — six states, six meanings, never decorative. Flat fills
+     only (no gradients) — just a livelier, more saturated take on the
+     same six colors so the console doesn't read as bleak. */
+  --nominal: #3DDC84;
+  --caution: #FFB100;
+  --critical: #FF5C55;
+  --ambiguous: #A78BFA;
+  --borrowed: #38BDF8;
+  --probe-action: #FFC53D;
+
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--ink-900);
+  color: var(--ink-000);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* hard edges everywhere, no rounded-corner SaaS kit */
+button, input, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: var(--ink-800);
+  border: 1px solid var(--line-500);
+  border-radius: 2px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--ink-400); }
+button.active { border-color: var(--nominal); color: var(--nominal); }
+
+:focus-visible {
+  outline: 2px solid var(--borrowed);
+  outline-offset: 1px;
+}
+
+hr { border: none; border-top: 1px solid var(--line-500); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--line-500); }
+::-webkit-scrollbar-track { background: var(--ink-800); }
