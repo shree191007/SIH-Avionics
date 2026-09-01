@@ -10,6 +10,25 @@ The project is built in five stages, each with its own design doc at the
 repo root (`01_...md` – `05_...md`). This README is the map; those docs are
 the spec each stage was built against.
 
+## Quick start
+
+Requires Python ≥3.10 and Node.js ≥18.
+
+**macOS / Linux:**
+```bash
+./scripts/setup_mac.sh   # one-time: venv + pip install + npm install
+./scripts/run_mac.sh     # starts API (:8000) + console (:5173); Ctrl-C stops both
+```
+
+**Windows:**
+```bat
+scripts\setup_windows.bat
+scripts\run_windows.bat   :: opens the API and console each in their own window
+```
+
+Then open http://localhost:5173 and press **LIVE** to send a real
+telemetry frame through the actual backend. Details in [Setup](#setup).
+
 ## Why this exists
 
 Conventional engine monitoring alerts on raw sensor thresholds (EGT too
