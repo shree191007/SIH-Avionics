@@ -164,6 +164,46 @@ frame through the actual backend (the scripted "1–6" scenario buttons are
 a separate, pre-authored demo mode that needs no backend). A live call
 genuinely takes tens of seconds — see [Known limitations](#known-limitations).
 
+## Telemetry security
+
+Telemetry can be encrypted two ways, independently. Both are **opt-in**
+(default is plain HTTP, unencrypted) so the console's LIVE button stays
+zero-friction for a demo; turn either on when you actually need it:
+
+- **In transit (TLS)**: set `USE_TLS=1` before `run_api.sh`/`.bat` (or
+  `run_mac.sh`/`run_windows.bat`) to serve over HTTPS with a self-signed
+  dev cert, auto-generated on first run (`scripts/gen_dev_cert.sh` /
+  `.bat`). If you enable it, also set
+  `VITE_API_BASE=https://localhost:8000` (e.g. in
+  `gcs-console/.env.local`) before starting the console. **Real friction,
+  not glossed over**: a browser will refuse the console's `fetch()` calls
+  with `ERR_CERT_AUTHORITY_INVALID` until a human visits
+  `https://localhost:8000` directly once and clicks through the
+  "Advanced → Proceed" warning — that's the browser protecting the user
+  from a self-signed cert, no code can skip it, and it's a one-time
+  per-browser-profile step. This is local-dev-only; a real deployment
+  needs a cert from a real CA, not this self-signed one.
+- **Payload-level (optional)**: `POST /telemetry/encrypted` accepts a
+  [Fernet](https://cryptography.io/en/latest/fernet/)-encrypted
+  (AES-128-CBC + HMAC-SHA256, authenticated) telemetry payload instead of
+  plain JSON — for confidentiality that survives an untrusted relay in
+  between (e.g. a future MQTT broker), independent of TLS. Disabled
+  (404s) unless `TELEMETRY_ENCRYPTION_KEY` is set in the API's
+  environment; generate one with:
+  ```bash
+  python3 -c "from replan_to_learn.ingestion.crypto import TelemetryCipher; print(TelemetryCipher.generate_key())"
+  ```
+  Treat that key as a secret — an env var or secrets manager, never
+  committed. See `src/replan_to_learn/ingestion/` (`TelemetryIngestor`,
+  `TelemetryCipher`) — the same transport-agnostic ingestion layer a
+  future MQTT subscriber would call into.
+
+Still open, not yet done: request auth (any client that can reach the
+API can POST telemetry for any `engine_id`), and the API binds
+`0.0.0.0` rather than `127.0.0.1` (reachable from the LAN, not just
+localhost) — see CORS's own comment in `api/app.py` for the same caveat
+applied there.
+
 ## Data
 
 Real data lives in `data/` (NGAFID cross-fleet telemetry, and the NTSB

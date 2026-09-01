@@ -7,10 +7,11 @@ panel builder) call, no logic duplicated here.
 """
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from replan_to_learn.api.schemas import (
@@ -31,6 +32,7 @@ from replan_to_learn.api.schemas import (
 from replan_to_learn.api.session import SessionManager
 from replan_to_learn.contracts.telemetry import TelemetryFrame
 from replan_to_learn.gate.datatypes import Verdict
+from replan_to_learn.ingestion import TelemetryCipher, TelemetryIngestionError, TelemetryIngestor
 from replan_to_learn.planner.mission_simulator import MissionState
 
 app = FastAPI(title="Replan to Learn API", version="1.0.0")
@@ -44,7 +46,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# TELEMETRY_ENCRYPTION_KEY: optional Fernet key (see
+# ingestion.crypto.TelemetryCipher.generate_key()) enabling POST
+# /telemetry/encrypted for payload-level confidentiality independent of
+# TLS. Unset by default -- most deployments only need TLS (below); this
+# is for defense-in-depth or an untrusted relay between source and API.
+_cipher_key = os.environ.get("TELEMETRY_ENCRYPTION_KEY")
+_cipher = TelemetryCipher(_cipher_key) if _cipher_key else None
+
 _sessions = SessionManager()
+_ingestor = TelemetryIngestor(_sessions, cipher=_cipher)
 
 
 def _finite_or_none(x: float) -> Optional[float]:
@@ -129,14 +140,27 @@ def _build_process_result(session) -> ProcessResultOut:
 
 @app.post("/telemetry", response_model=ProcessResultOut)
 def post_telemetry(t_in: TelemetryIn) -> ProcessResultOut:
-    if not t_in.engine_id:
-        raise HTTPException(status_code=400, detail="engine_id is required")
-    session = _sessions.get_or_create(t_in.engine_id)
-    frame = _telemetry_frame(t_in)
     try:
-        session.process(frame)
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Failed to process telemetry: {e}")
+        session = _ingestor.ingest(t_in.model_dump())
+    except TelemetryIngestionError as e:
+        status = 400 if "engine_id is required" in str(e) else 422
+        raise HTTPException(status_code=status, detail=str(e))
+    return _build_process_result(session)
+
+
+@app.post("/telemetry/encrypted", response_model=ProcessResultOut)
+async def post_telemetry_encrypted(request: Request) -> ProcessResultOut:
+    """Body is a raw Fernet token (see TelemetryCipher), not JSON -- for a
+    telemetry source that encrypts the payload itself, independent of TLS.
+    404s if TELEMETRY_ENCRYPTION_KEY isn't configured on this server."""
+    if _cipher is None:
+        raise HTTPException(status_code=404, detail="Payload encryption is not configured on this server")
+    token = await request.body()
+    try:
+        session = _ingestor.ingest_encrypted(token)
+    except TelemetryIngestionError as e:
+        status = 400 if "engine_id is required" in str(e) else 422
+        raise HTTPException(status_code=status, detail=str(e))
     return _build_process_result(session)
 
 

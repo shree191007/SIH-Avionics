@@ -268,8 +268,21 @@ class PhysicsTwin:
         return base * max(0.1, (v_tas ** 0.8)) * max(0.1, (rho_amb ** 0.8)) * max(0.1, (N / 300.0))
 
     def _compute_ua_oc(self, v_tas: float, rho_amb: float) -> float:
+        # v_tas exponent dropped (was 0.8, matching UA_hd/UA_c's direct-
+        # freestream-convection assumption): a finite-difference regression
+        # of real oil-cooling rate vs v_tas over WPR22LA211's cooling-phase
+        # samples (n=634, v_tas 5-45 m/s) found an implied exponent of
+        # ~0.03 -- essentially flat, not 0.8. Physically this makes sense
+        # for the 915iS's remote oil-to-air cooler: it's ram-air-ducted,
+        # not a bare fin stack in freestream, so its effective cooling
+        # airflow is much less coupled to aircraft v_tas than direct
+        # convection would be. [CAVEAT] regression is noisy (one flight,
+        # narrow regime, crude finite-difference dT/dt proxy) -- treat as
+        # a real signal to structurally fix the exponent, not a precise
+        # calibrated value. rho_amb^0.8 retained (air density still
+        # plausibly affects duct mass flow / heat transfer coefficient).
         base = self.fixed_params["UA_oc_nom"]
-        return base * max(0.1, (v_tas ** 0.8)) * max(0.1, (rho_amb ** 0.8))
+        return base * max(0.1, (rho_amb ** 0.8))
 
     def _compute_ua_c(self, v_tas: float, rho_amb: float, N: float, cyl_idx: int) -> float:
         base = self.fixed_params["UA_c_nom"]

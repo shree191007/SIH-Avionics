@@ -11,7 +11,13 @@
 // network latency). Callers MUST show a loading state; this is not
 // something to poll at animation frame rates.
 
-const API_BASE = 'http://localhost:8000';
+// http by default (zero-friction for a live demo). TLS is opt-in on the
+// backend (USE_TLS=1, see scripts/run_api.sh/.bat) -- if you enable it
+// there, also set VITE_API_BASE=https://localhost:8000 (e.g. in
+// gcs-console/.env.local) before starting the console, and expect a
+// one-time browser cert-warning click-through on https://localhost:8000
+// (self-signed cert; no way to skip that from code).
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 async function apiFetch(path, options) {
   const res = await fetch(`${API_BASE}${path}`, {
